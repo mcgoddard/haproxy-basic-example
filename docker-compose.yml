@@ -1,0 +1,56 @@
+version: "3.1"
+
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack
+    container_name: bookstack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - APP_URL=http://localhost/bookstack
+      - DB_HOST=bookstack_db
+      - DB_PORT=3306
+      - DB_USER=bookstack
+      - DB_PASS=example-password
+      - DB_DATABASE=bookstackapp
+    volumes:
+      - /opt/bookstack/config:/config
+    restart: unless-stopped
+    depends_on:
+      - bookstack_db
+  bookstack_db:
+    image: lscr.io/linuxserver/mariadb
+    container_name: bookstack_db
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=example-password
+      - TZ=Europe/London
+      - MYSQL_DATABASE=bookstackapp
+      - MYSQL_USER=bookstack
+      - MYSQL_PASSWORD=example-password
+    volumes:
+      - /opt/mariadb/config:/config
+    restart: unless-stopped
+  api1:
+    image: myapi
+    container_name: api_1
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=api-server-1 # so we can see which server has responded to us
+  api2:
+    image: myapi
+    container_name: api_2
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=api-server-2 # so we can see which server has responded to us
+  haproxy:
+    image: myhaproxy
+    container_name: haproxy
+    restart: unless-stopped
+    ports:
+      - 80:80 # make our HAProxy available on port 80 of localhost
+    depends_on:
+      - api1
+      - api2
+      - bookstack
